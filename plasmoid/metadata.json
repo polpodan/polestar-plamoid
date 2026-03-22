@@ -1,0 +1,24 @@
+{
+    "KPlugin": {
+        "Name": "Polestar Hub",
+        "Name[fr]": "Polestar Hub",
+        "Description": "Moniteur de voiture Polestar — batterie, autonomie, odomètre et contrôle climatisation",
+        "Description[fr]": "Moniteur de voiture Polestar — batterie, autonomie, odomètre et contrôle climatisation",
+        "Icon": "car",
+        "Id": "com.polestar.plasmoid",
+        "Version": "1.0.0",
+        "License": "GPL-2.0-only",
+        "Authors": [
+            {
+                "Email": "",
+                "Name": "Polestar Plasmoid"
+            }
+        ],
+        "Category": "System Information",
+        "Website": "https://github.com/pypolestar/pypolestar",
+        "EnabledByDefault": true,
+        "MimeTypes": []
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml"
+}
