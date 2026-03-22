@@ -1,0 +1,19 @@
+[Unit]
+Description=Polestar Plasmoid Daemon
+Documentation=https://github.com/pypolestar/pypolestar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/polestar-plasmoid/venv/bin/python3 %h/.local/share/polestar-plasmoid/polestar_daemon.py
+Restart=on-failure
+RestartSec=60
+StandardOutput=journal
+StandardError=journal
+
+# Variables d'environnement (optionnel)
+# Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
