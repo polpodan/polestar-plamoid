@@ -54,7 +54,7 @@ fi
 # Installer/mettre à jour les dépendances dans le venv
 echo -e "  Installation de pypolestar et httpx dans le venv…"
 "$VENV_PYTHON" -m pip install --quiet --upgrade pip
-"$VENV_PYTHON" -m pip install --quiet pypolestar httpx
+"$VENV_PYTHON" -m pip install --quiet "pypolestar>=0.7.0" httpx
 
 # Vérification
 if "$VENV_PYTHON" -c "import pypolestar, httpx" 2>/dev/null; then
@@ -87,7 +87,7 @@ if [[ "$OVERWRITE" =~ ^[Oo]$ ]] || [ ! -f "$CONFIG_FILE" ]; then
 {
     "username": "$POLESTAR_EMAIL",
     "password": "$POLESTAR_PASS",
-    "vin": ${POLESTAR_VIN:+"\"$POLESTAR_VIN\""}${POLESTAR_VIN:-null}
+    "vin": $( [ -z "$POLESTAR_VIN" ] && echo "null" || echo "\"$POLESTAR_VIN\"" )
 }
 EOF
     chmod 600 "$CONFIG_FILE"
@@ -130,20 +130,28 @@ echo -e "\n  Test de la connexion API Polestar…"
 
 # ── 5. Installer le plasmoid ──────────────────────────────────────────────────
 echo -e "\n${BOLD}[5/5] Installation du plasmoid KDE…${RESET}"
-mkdir -p "$PLASMOID_DEST"
-cp -r "$PLASMOID_SRC/." "$PLASMOID_DEST/"
-echo -e "${GREEN}  ✓ Plasmoid copié dans $PLASMOID_DEST${RESET}"
 
-# Vérifier si kpackagetool6 est dispo
-if command -v kpackagetool6 &>/dev/null; then
-    echo "  Rechargement du package Plasma…"
-    kpackagetool6 --type Plasma/Applet --install "$PLASMOID_DEST" 2>/dev/null || \
-    kpackagetool6 --type Plasma/Applet --upgrade "$PLASMOID_DEST" 2>/dev/null || true
-    echo -e "${GREEN}  ✓ Plasmoid enregistré auprès de Plasma${RESET}"
-elif command -v kpackagetool5 &>/dev/null; then
-    kpackagetool5 --type Plasma/Applet --install "$PLASMOID_DEST" 2>/dev/null || \
-    kpackagetool5 --type Plasma/Applet --upgrade "$PLASMOID_DEST" 2>/dev/null || true
+# S'assurer que les chemins sont absolus
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLASMOID_SRC_ABS="$ROOT_DIR/plasmoid"
+
+echo "  Source: $PLASMOID_SRC_ABS"
+echo "  Destination: $PLASMOID_DEST"
+
+mkdir -p "$PLASMOID_DEST"
+rm -rf "${PLASMOID_DEST:?}/"*
+cp -rv "$PLASMOID_SRC_ABS/"* "$PLASMOID_DEST/"
+
+if [ -f "$PLASMOID_DEST/metadata.json" ]; then
+    echo -e "${GREEN}  ✓ Plasmoid copié avec succès dans $PLASMOID_DEST${RESET}"
+    ls -l "$PLASMOID_DEST/metadata.json"
+else
+    echo -e "${RED}❌ Échec de la copie du plasmoid. Le fichier metadata.json est absent de $PLASMOID_DEST${RESET}"
+    exit 1
 fi
+
+# Note: kpackagetool6 est désactivé car il peut interférer avec la copie manuelle.
+# Un redémarrage de plasmashell ou de la session est recommandé pour détecter les changements.
 
 # ── Résumé ────────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}${GREEN}╔════════════════════════════════════════════╗"

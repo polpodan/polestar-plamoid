@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
-# uninstall.sh — Désinstallation complète du plasmoid Polestar
-set -e
+# ============================================================
+# uninstall.sh — Désinstallation du plasmoid Polestar
+# ============================================================
 
-echo "🗑️  Désinstallation du plasmoid Polestar…"
+RED="\033[31m"
+GREEN="\033[32m"
+BOLD="\033[1m"
+RESET="\033[0m"
 
-# Arrêter et désactiver le service
-systemctl --user stop    polestar-plasmoid.service 2>/dev/null || true
-systemctl --user disable polestar-plasmoid.service 2>/dev/null || true
+echo -e "${BOLD}Désinstallation de Polestar Hub...${RESET}"
+
+# 1. Arrêter et supprimer le service systemd
+echo "→ Arrêt du service systemd..."
+systemctl --user stop polestar-plasmoid.service 2>/dev/null
+systemctl --user disable polestar-plasmoid.service 2>/dev/null
 rm -f "$HOME/.config/systemd/user/polestar-plasmoid.service"
 systemctl --user daemon-reload
 
-# Supprimer les fichiers
-rm -rf "$HOME/.local/share/plasma/plasmoids/com.polestar.plasmoid"
+# 2. Supprimer les fichiers du daemon et l'environnement virtuel
+echo "→ Suppression des fichiers du daemon..."
 rm -rf "$HOME/.local/share/polestar-plasmoid"
 
-echo "Supprimer aussi la configuration (identifiants) ? [o/N]"
-read CONFIRM
-if [[ "$CONFIRM" =~ ^[Oo]$ ]]; then
-    rm -rf "$HOME/.config/polestar-plasmoid"
-    echo "Configuration supprimée."
+# 3. Supprimer le plasmoid
+echo "→ Suppression du widget KDE..."
+if command -v kpackagetool6 &>/dev/null; then
+    kpackagetool6 --type Plasma/Applet --remove com.polestar.plasmoid 2>/dev/null
+elif command -v kpackagetool5 &>/dev/null; then
+    kpackagetool5 --type Plasma/Applet --remove com.polestar.plasmoid 2>/dev/null
 fi
+rm -rf "$HOME/.local/share/plasma/plasmoids/com.polestar.plasmoid"
 
-echo "✅ Désinstallation terminée."
-echo "Redémarrez Plasma pour que les changements prennent effet :"
-echo "  kquitapp6 plasmashell && kstart plasmashell"
+echo -e "\n${GREEN}${BOLD}✅ Désinstallation terminée.${RESET}"
+echo -e "Note: Vos identifiants dans ~/.config/polestar-plasmoid ont été conservés."
