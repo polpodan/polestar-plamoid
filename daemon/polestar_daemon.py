@@ -16,6 +16,61 @@ from datetime import datetime, timezone
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+# ─── Monkey-Patching pypolestar (Correctif API Mai 2026) ─────────────────────
+try:
+    import pypolestar.graphql
+    import pypolestar.models
+    from gql import gql
+
+    # 1. Correction de la requête GraphQL (suppression de chargingStatus obsolète)
+    pypolestar.graphql.QUERY_TELEMATICS_V2 = gql(
+        """
+        query CarTelematicsV2($vins: [String!]!) {
+            carTelematicsV2(vins: $vins) {
+                health {
+                    vin
+                    brakeFluidLevelWarning
+                    daysToService
+                    distanceToServiceKm
+                    engineCoolantLevelWarning
+                    oilLevelWarning
+                    serviceWarning
+                    timestamp { seconds nanos }
+                }
+                battery {
+                    vin
+                    batteryChargeLevelPercentage
+                    estimatedChargingTimeToFullMinutes
+                    estimatedDistanceToEmptyKm
+                    timestamp { seconds nanos }
+                }
+                odometer {
+                    vin
+                    odometerMeters
+                    timestamp { seconds nanos }
+                }
+            }
+        }
+        """
+    )
+
+    # 2. Correction du modèle (gestion sécurisée du champ manquant)
+    _original_battery_from_dict = pypolestar.models.CarBatteryData.from_dict
+
+    @classmethod
+    def _patched_battery_from_dict(cls, data):
+        if "chargingStatus" not in data:
+            # On injecte une valeur par défaut pour éviter le plantage
+            data["chargingStatus"] = "CHARGING_STATUS_UNSPECIFIED"
+        return _original_battery_from_dict(data)
+
+    pypolestar.models.CarBatteryData.from_dict = _patched_battery_from_dict
+    logging.getLogger("polestar-daemon").info("✅ Patch pypolestar appliqué avec succès.")
+except ImportError:
+    pass
+except Exception as e:
+    logging.getLogger("polestar-daemon").warning(f"⚠️ Échec du patch pypolestar: {e}")
+
 # ─── Chemins ──────────────────────────────────────────────────────────────────
 CONFIG_FILE = Path.home() / ".config"  / "polestar-plasmoid" / "config.json"
 DATA_FILE   = Path.home() / ".local"   / "share" / "polestar-plasmoid" / "data.json"
